@@ -6,17 +6,16 @@ class TaxRules(object):
     def __init__(self):
         self.table: Tuple[Tuple[float, float], ...] = tuple()
         self.standard_deduction = 0
-        self.max_taxable_income = math.inf
 
 
 federal_tax_rules_2018 = TaxRules()
 federal_tax_rules_2018.table = (
-    (9525, 0.10),
-    (38700, 0.12),
-    (82500, 0.22),
-    (157500, 0.24),
-    (200000, 0.32),
-    (500000, 0.35),
+    (9_525, 0.10),
+    (38_700, 0.12),
+    (82_500, 0.22),
+    (157_500, 0.24),
+    (200_000, 0.32),
+    (500_000, 0.35),
     (math.inf, 0.37)
 )
 federal_tax_rules_2018.standard_deduction = 12000
@@ -24,12 +23,12 @@ federal_tax_rules_2018.standard_deduction = 12000
 
 federal_tax_rules_2019 = TaxRules()
 federal_tax_rules_2019.table = (
-    (9700, 0.10),
-    (39475, 0.12),
-    (84200, 0.22),
-    (160725, 0.24),
-    (204100, 0.32),
-    (510300, 0.35),
+    (9_700, 0.10),
+    (39_475, 0.12),
+    (84_200, 0.22),
+    (160_725, 0.24),
+    (204_100, 0.32),
+    (510_300, 0.35),
     (math.inf, 0.37)
 )
 federal_tax_rules_2019.standard_deduction = 12200
@@ -37,35 +36,50 @@ federal_tax_rules_2019.standard_deduction = 12200
 
 california_tax_rules_2018 = TaxRules()
 california_tax_rules_2018.table = (
-    (8544, 0.01),
-    (20255, 0.02),
-    (31969, 0.04),
-    (44377, 0.06),
-    (56085, 0.08),
-    (286492, 0.093),
-    (343788, 0.103),
-    (572980, 0.113),
+    (8_544, 0.01),
+    (20_255, 0.02),
+    (31_969, 0.04),
+    (44_377, 0.06),
+    (56_085, 0.08),
+    (286_492, 0.093),
+    (343_788, 0.103),
+    (572_980, 0.113),
     (math.inf, 0.123)
 )
 california_tax_rules_2018.standard_deduction = 4401
 
 
-def make_fica_rules(rate: float, max_taxable: float) -> TaxRules:
-    rules = TaxRules()
-    rules.table = ((math.inf, rate),)
-    rules.max_taxable_income = max_taxable
-    return rules
+def make_fica_rules(
+        social_security_rate: float,
+        social_security_max_taxable: float,
+        medicare_rate: float,
+        medicare_extra_rate: float,
+        ) -> Tuple[TaxRules, TaxRules]:
+
+    social_security_rules = TaxRules()
+    social_security_rules.table = (
+        (social_security_max_taxable, social_security_rate),
+        (math.inf, 0)
+    )
+
+    medicare_rules = TaxRules()
+    medicare_rules.table = (
+        (200_000, medicare_rate),
+        (math.inf, medicare_rate + medicare_extra_rate)
+    )
+
+    return social_security_rules, medicare_rules
 
 
-fica_tax_rules_2018 = make_fica_rules(0.0765, 128400)
-fica_tax_rules_2019 = make_fica_rules(0.0765, 132900)
+social_security_tax_rules_2018, medicare_tax_rules_2018 = make_fica_rules(0.062, 128_400, 0.0145, 0.009)
+social_security_tax_rules_2019, medicare_tax_rules_2019 = make_fica_rules(0.062, 132_900, 0.0145, 0.009)
 
 
 rulesets_by_year = {
-    2018: (federal_tax_rules_2018, california_tax_rules_2018, fica_tax_rules_2018),
+    2018: (federal_tax_rules_2018, california_tax_rules_2018, social_security_tax_rules_2018, medicare_tax_rules_2018),
 
     # TODO: California has not released 2019 tax material at the time this was written
-    2019: (federal_tax_rules_2019, california_tax_rules_2018, fica_tax_rules_2019)
+    2019: (federal_tax_rules_2019, california_tax_rules_2018, social_security_tax_rules_2019, medicare_tax_rules_2019)
 }
 
 
@@ -80,8 +94,7 @@ def calculate_net(ruleset: Tuple[TaxRules, ...], gross: float) -> float:
 
 
 def calculate_net_for_rules(rules: TaxRules, gross) -> Tuple[float, float]:
-    gross -= rules.standard_deduction
-    gross = min(gross, rules.max_taxable_income)
+    taxable = gross - rules.standard_deduction
 
     bracket_index = 0
     taxed = 0
@@ -89,17 +102,16 @@ def calculate_net_for_rules(rules: TaxRules, gross) -> Tuple[float, float]:
 
     while True:
         max_income, rate = rules.table[bracket_index]
-        taxed += (min(gross, max_income) - last_max_bracket) * rate
+        taxed += (min(taxable, max_income) - last_max_bracket) * rate
 
-        if gross < max_income:
+        if taxable < max_income:
             break
 
         last_max_bracket = max_income
         bracket_index += 1
 
-    net = gross - taxed
-    effective_rate = 1 - net / gross
-    return net + rules.standard_deduction, round(effective_rate, 4)
+    effective_rate = 1 - taxable - taxed / taxable
+    return gross - taxed, effective_rate
 
 
 def calculate_gross(ruleset: Tuple[TaxRules, ...], net: float):
@@ -147,7 +159,6 @@ def calculate_gross_for_rules(rules: TaxRules, net):
 
     while bracket_index < len(rules.table):
         max_income, rate = rules.table[bracket_index]
-        max_income = min(max_income, rules.max_taxable_income)
 
         bracket_start = last_max_income
 
