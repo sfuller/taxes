@@ -1,20 +1,20 @@
 import math
 from typing import Tuple
 
-from taxes.models import TaxRules
+from taxes.models import TaxTable
 
 
-def calculate_net(ruleset: Tuple[TaxRules, ...], gross: float) -> float:
+def calculate_net(ruleset: Tuple[TaxTable, ...], gross: float) -> float:
     taxed = 0
 
     for rules in ruleset:
-        net, _ = calculate_net_for_rules(rules, gross)
+        net, _ = calculate_net_for_table(rules, gross)
         taxed += gross - net
 
     return gross - taxed
 
 
-def calculate_net_for_rules(rules: TaxRules, gross) -> Tuple[float, float]:
+def calculate_net_for_table(rules: TaxTable, gross) -> Tuple[float, float]:
     taxable = gross - rules.standard_deduction
 
     bracket_index = 0
@@ -35,8 +35,8 @@ def calculate_net_for_rules(rules: TaxRules, gross) -> Tuple[float, float]:
     return gross - taxed, effective_rate
 
 
-def calculate_gross(ruleset: Tuple[TaxRules, ...], net: float):
-    calculators: Tuple[Tuple[TaxRules, GrossTaxFactorState]]
+def calculate_gross(ruleset: Tuple[TaxTable, ...], net: float):
+    calculators: Tuple[Tuple[TaxTable, GrossTaxFactorState]]
     calculators = tuple((rules, GrossTaxFactorState()) for rules in ruleset)
 
     for _, state in calculators:
@@ -53,7 +53,7 @@ def calculate_gross(ruleset: Tuple[TaxRules, ...], net: float):
         for rules, state in calculators:
             delta_gross = gross - state.previous_gross
             net = state.previous_net + delta_gross
-            gross = calculate_gross_for_rules(rules, net)
+            gross = calculate_gross_for_table(rules, net)
 
             total_delta_tax += gross - state.previous_gross
 
@@ -71,7 +71,7 @@ class GrossTaxFactorState(object):
         self.previous_gross = 0
 
 
-def calculate_gross_for_rules(rules: TaxRules, net):
+def calculate_gross_for_table(rules: TaxTable, net):
     net -= rules.standard_deduction
 
     taxed = 0

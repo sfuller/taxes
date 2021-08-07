@@ -3,11 +3,11 @@ import taxes.data
 
 
 def converter(current_state: str, current_gross: float, current_costs: float, new_state: str, new_costs: float) -> float:
-    ruleset = taxes.data.rulesets_by_year[2020]
-    current_net = taxes.calculate_net(ruleset.get_rules_for_state(current_state), current_gross)
+    ruleset = taxes.data.get_ruleset_for_year('2020')
+    current_net = taxes.calculate_net(ruleset.get_tables(current_state, False, False), current_gross)
     current_leftover = current_net - current_costs
     new_net = current_leftover + new_costs
-    return taxes.calculate_gross(ruleset.get_rules_for_state(new_state), new_net)
+    return taxes.calculate_gross(ruleset.get_tables(new_state, False, False), new_net)
 
 
 def main():
