@@ -30,9 +30,10 @@ Example Usage
 ```python
 >>> import taxes
 >>> ruleset = taxes.get_ruleset_for_year('2019')
->>> taxes.calculate_net(ruleset, 120_000)
+>>> tables = ruleset.get_tables(state='ca', joint_federal=False, joint_state=False)
+>>> taxes.calculate_net(tables, 120_000)
 82769.35800000001
->>> taxes.calculate_gross(ruleset, 82769.35800000001)
+>>> taxes.calculate_gross(tables, 82769.35800000001)
 119999.99809149538
 ```
 
