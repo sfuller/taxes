@@ -6,6 +6,12 @@ class TaxTable(object):
     def __init__(self,
                  table: Tuple[Tuple[float, float], ...],
                  standard_deduction: float = 0):
+        """
+
+        :param table: Tuple of tuples of max income and tax rates. Any income greater than or equal to the max income is
+                      taxed at that rate of the next table tuple element.
+        :param standard_deduction: The standard deduction.
+        """
         self.table = table
         self.standard_deduction = standard_deduction
 
