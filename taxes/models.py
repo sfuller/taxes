@@ -13,7 +13,7 @@ class TaxTable(object):
 class TaxRules(object):
     def __init__(self, single: TaxTable, married: TaxTable):
         self.single = single
-        self.married = married
+        self.joint = married
 
 
 def make_fica_rules(
@@ -40,7 +40,11 @@ def make_fica_rules(
 
 
 class Ruleset(object):
-    def __init__(self, federal: TaxRules, state: Dict[str, TaxRules], social_security: TaxTable, medicare: TaxRules):
+    def __init__(self,
+                 federal: TaxRules,
+                 state: Dict[str, TaxRules],
+                 social_security: TaxTable,
+                 medicare: TaxRules):
         self.federal = federal
         self.state = state
         self.social_security = social_security
@@ -48,7 +52,7 @@ class Ruleset(object):
 
     def get_tables(self, state: str, joint_federal: bool, joint_state: bool) -> Tuple[TaxTable, ...]:
         state_rules = self.state[state]
-        federal_table = self.federal.married if joint_federal else self.federal.single
-        medicare_table = self.medicare.married if joint_federal else self.medicare.single
-        state_table = state_rules.married if joint_state else state_rules.married
+        federal_table = self.federal.joint if joint_federal else self.federal.single
+        medicare_table = self.medicare.joint if joint_federal else self.medicare.single
+        state_table = state_rules.joint if joint_state else state_rules.joint
         return federal_table, state_table, self.social_security, medicare_table

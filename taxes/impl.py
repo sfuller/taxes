@@ -4,25 +4,29 @@ from typing import Tuple
 from taxes.models import TaxTable
 
 
-def calculate_net(ruleset: Tuple[TaxTable, ...], gross: float) -> float:
+def calculate_tax(tables: Tuple[TaxTable, ...], gross: float) -> float:
     taxed = 0
 
-    for rules in ruleset:
+    for rules in tables:
         net, _ = calculate_net_for_table(rules, gross)
         taxed += gross - net
 
-    return gross - taxed
+    return taxed
 
 
-def calculate_net_for_table(rules: TaxTable, gross) -> Tuple[float, float]:
-    taxable = gross - rules.standard_deduction
+def calculate_net(tables: Tuple[TaxTable, ...], gross: float) -> float:
+    return gross - calculate_tax(tables, gross)
+
+
+def calculate_net_for_table(table: TaxTable, gross) -> Tuple[float, float]:
+    taxable = gross - table.standard_deduction
 
     bracket_index = 0
     taxed = 0
     last_max_bracket = 0
 
     while True:
-        max_income, rate = rules.table[bracket_index]
+        max_income, rate = table.table[bracket_index]
         taxed += (min(taxable, max_income) - last_max_bracket) * rate
 
         if taxable < max_income:
@@ -35,9 +39,9 @@ def calculate_net_for_table(rules: TaxTable, gross) -> Tuple[float, float]:
     return gross - taxed, effective_rate
 
 
-def calculate_gross(ruleset: Tuple[TaxTable, ...], net: float):
+def calculate_gross(tables: Tuple[TaxTable, ...], net: float):
     calculators: Tuple[Tuple[TaxTable, GrossTaxFactorState]]
-    calculators = tuple((rules, GrossTaxFactorState()) for rules in ruleset)
+    calculators = tuple((rules, GrossTaxFactorState()) for rules in tables)
 
     for _, state in calculators:
         state.previous_net = net
@@ -71,15 +75,15 @@ class GrossTaxFactorState(object):
         self.previous_gross = 0
 
 
-def calculate_gross_for_table(rules: TaxTable, net):
-    net -= rules.standard_deduction
+def calculate_gross_for_table(table: TaxTable, net):
+    net -= table.standard_deduction
 
     taxed = 0
     bracket_index = 0
     last_max_income = 0
 
-    while bracket_index < len(rules.table):
-        max_income, rate = rules.table[bracket_index]
+    while bracket_index < len(table.table):
+        max_income, rate = table.table[bracket_index]
 
         bracket_start = last_max_income
 
@@ -98,4 +102,4 @@ def calculate_gross_for_table(rules: TaxTable, net):
         last_max_income = max_income
         bracket_index += 1
 
-    return net + taxed + rules.standard_deduction
+    return net + taxed + table.standard_deduction
