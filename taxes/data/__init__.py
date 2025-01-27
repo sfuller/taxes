@@ -8,7 +8,12 @@ from taxes.models import TaxTable, Ruleset, TaxRules
 #
 # FICA numbers can be found on the IRS's Publication 15.
 #
-# http://www.tax-rates.org/ is also very useful!
+# Be careful with the IRS's website when looking up the federal tax rates! Especially earlier in the year!
+# Sometimes the IRS will reference the year as the year when the taxes are due
+# (E.g: The IRS may display 'rates for tax year 2023' and show 2022 tax rates)
+#
+# Resources to avoid:
+# http://www.tax-rates.org/ consistently has incorrect information for California tax rates, year round. Avoid!
 #
 
 
