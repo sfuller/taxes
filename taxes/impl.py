@@ -21,15 +21,18 @@ def calculate_net(tables: Tuple[TaxTable, ...], gross: float) -> float:
 def calculate_net_for_table(table: TaxTable, gross) -> Tuple[float, float]:
     taxable = gross - table.standard_deduction
 
+    if taxable == 0:
+        return gross, 0.0
+
     bracket_index = 0
     taxed = 0
     last_max_bracket = 0
 
     while True:
         max_income, rate = table.table[bracket_index]
-        taxed += (min(taxable, max_income) - last_max_bracket) * rate
+        taxed += (min(taxable, max_income + 1) - last_max_bracket) * rate
 
-        if taxable < max_income:
+        if taxable < max_income + 1:
             break
 
         last_max_bracket = max_income
@@ -85,9 +88,9 @@ def calculate_gross_for_table(table: TaxTable, net):
     while bracket_index < len(table.table):
         max_income, rate = table.table[bracket_index]
 
-        bracket_start = last_max_income
+        bracket_start = last_max_income + 1
 
-        while bracket_start < max_income:
+        while bracket_start < (max_income + 1):
             taxable_income = min(net + taxed, max_income) - bracket_start
             bracket_start = net + taxed
             bracket_taxed = taxable_income * rate
@@ -96,7 +99,7 @@ def calculate_gross_for_table(table: TaxTable, net):
             if bracket_taxed < 0.01:
                 break
 
-        if net + taxed < max_income:
+        if net + taxed < (max_income + 1):
             break
 
         last_max_income = max_income
